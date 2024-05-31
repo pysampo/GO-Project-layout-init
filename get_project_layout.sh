@@ -140,7 +140,7 @@ run:
 	go run cmd/\$(PROJECT_NAME)/*.go
 
 build:
-	go build -o \$(BUILD_DIR) cmd/\$(PROJECT_NAME)/*.go
+	go build -o \$(BUILD_DIR)/\$(PROJECT_NAME) cmd/\$(PROJECT_NAME)/*.go
 
 gen:
 	protoc -I=\$(API_DIR) --go_out=\$(GEN_DIR) --go-grpc_out=\$(GEN_DIR) \$(API_DIR)/\$(PROJECT_NAME).proto
