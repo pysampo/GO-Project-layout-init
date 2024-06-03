@@ -117,8 +117,6 @@ mkdir -p cmd/$PROJECT_NAME \
     docker \
     configs
 
-echo "package main" >> cmd/$PROJECT_NAME/main.go
-
 # todo:
 if  false; then
     # go mod init
@@ -127,6 +125,17 @@ if  false; then
 fi
 
 echo $'.vscode\n.swp\nbuild' > .gitignore
+
+
+cat << EOF > cmd/$PROJECT_NAME/main.go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("Hello, ${PROJECT_NAME}")
+}
+EOF
 
 cat << EOF > Makefile
 .PHONY: run build gen clean
@@ -148,4 +157,29 @@ gen:
 .DELETE_ON_ERROR:
 clean:
 	rm -rf \$(BUILD_DIR) && find \$(GEN_DIR) -type f -name '*.go' -exec rm {} +
+EOF
+
+cat << EOF > docker/Dockerfile
+FROM golang:1.21.10-bullseye
+
+WORKDIR /app/
+
+COPY cmd /app/cmd
+COPY configs /app/configs
+COPY internal /app/internal
+
+CMD ["go", "run", "cmd/${PROJECT_NAME}/main.go"]
+EOF
+
+cat << EOF > docker-compose.yml
+version: "3"
+services:
+  ${PROJECT_NAME}:
+    container_name: hello_${PROJECT_NAME}
+    build:
+      context: ./
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ./:/app/
+    network_mode: "host"
 EOF
