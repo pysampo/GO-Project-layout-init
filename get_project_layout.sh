@@ -81,7 +81,7 @@ fi
 cd $OUT_DIR
 
 FILECOUNT=$(find . -maxdepth 1 -type f | wc -l)
-DIRCOUNT=$(find . -maxdepth 1 -type d | wc -l)
+DIRCOUNT=$(find  . -maxdepth 1 -type d | wc -l)
 
 if [ ${DIRCOUNT} -ne 1 ]; then
     echo "Error: ${OUT_DIR} is not empty" >&2
@@ -118,14 +118,12 @@ mkdir -p cmd/$PROJECT_NAME \
     configs
 
 # todo:
-if  false; then
-    # go mod init
-    # go mod tidy
-    echo "not impl."
-fi
+# if  false; then
+#     # go mod init
+#     # go mod tidy
+# fi
 
 echo $'.vscode\n.swp\nbuild' > .gitignore
-
 
 cat << EOF > cmd/$PROJECT_NAME/main.go
 package main
