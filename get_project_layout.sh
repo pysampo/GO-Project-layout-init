@@ -104,26 +104,21 @@ fi
 rm example
 
 echo "Preparing your project \"${PROJECT_NAME}\""
-set -ex
+set -x
 
 mkdir -p cmd/$PROJECT_NAME \
     internal/controller/$PROJECT_NAME \
     internal/pkg \
     internal/handler/grpc \
-    internal/handler/http \
-    internal/storage \
+    internal/repository \
     api \
     pkg \
     docker \
-    configs
+    config
 
-# todo:
-# if  false; then
-#     # go mod init
-#     # go mod tidy
-# fi
 
-echo $'.vscode\n.swp\nbuild' > .gitignore
+echo $'*.o\n.vscode\n.swp\nbuild' > .gitignore
+echo $'build\ndocker' > .dockerignore
 
 cat << EOF > cmd/$PROJECT_NAME/main.go
 package main
@@ -136,8 +131,10 @@ func main() {
 EOF
 
 cat << EOF > Makefile
+.DELETE_ON_ERROR:
 .PHONY: run build gen clean
 
+PROJECT_ROOT := \$(shell pwd)
 PROJECT_NAME := ${PROJECT_NAME}
 BUILD_DIR := ./build
 API_DIR := ./api
@@ -147,14 +144,33 @@ run:
 	go run cmd/\$(PROJECT_NAME)/*.go
 
 build:
-	go build -o \$(BUILD_DIR)/\$(PROJECT_NAME) cmd/\$(PROJECT_NAME)/*.go
+	go build \\
+    -o \$(BUILD_DIR)/\$(PROJECT_NAME) \\
+    cmd/\$(PROJECT_NAME)/*.go
 
 gen:
-	protoc -I=\$(API_DIR) --go_out=\$(GEN_DIR) --go-grpc_out=\$(GEN_DIR) \$(API_DIR)/\$(PROJECT_NAME).proto
+	protoc -I=\$(API_DIR) \\
+    --go_out=\$(GEN_DIR) \\
+    --go-grpc_out=\$(GEN_DIR) \\
+    \$(API_DIR)/\$(PROJECT_NAME).proto
 
-.DELETE_ON_ERROR:
 clean:
 	rm -rf \$(BUILD_DIR) && find \$(GEN_DIR) -type f -name '*.go' -exec rm {} +
+EOF
+
+cat << EOF > config/$PROJECT_NAME.yml
+version: "3"
+project:
+  name: hello_${PROJECT_NAME}
+  environment: development
+  service_name: ${PROJECT_NAME}-service
+
+grpc:
+  host: 0.0.0.0
+  port: 8080
+  maxConnectionIdle: 5m
+  timeout: 15s
+  maxConnectionAge: 5m
 EOF
 
 cat << EOF > docker/Dockerfile
@@ -162,9 +178,10 @@ FROM golang:1.21.10-bullseye
 
 WORKDIR /app/
 
-COPY cmd /app/cmd
-COPY configs /app/configs
+COPY cmd      /app/cmd
+COPY config   /app/configs
 COPY internal /app/internal
+COPY pkg      /app/pkg
 
 CMD ["go", "run", "cmd/${PROJECT_NAME}/main.go"]
 EOF
@@ -177,7 +194,5 @@ services:
     build:
       context: ./
       dockerfile: docker/Dockerfile
-    volumes:
-      - ./:/app/
     network_mode: "host"
 EOF
