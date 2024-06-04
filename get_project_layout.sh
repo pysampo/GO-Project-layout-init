@@ -140,19 +140,31 @@ BUILD_DIR := ./build
 API_DIR := ./api
 GEN_DIR := ./pkg/
 
+define docker
+	docker run \\
+		--rm \\
+		--user \$(id -u):\$(id -g) \\
+		--workdir /app \\
+		--volume \`pwd\`:/app/ \\
+		golang:1.21.10-bullseye make \$(1)
+endef
+
 run:
 	go run cmd/\$(PROJECT_NAME)/*.go
 
 build:
 	go build \\
-    -o \$(BUILD_DIR)/\$(PROJECT_NAME) \\
-    cmd/\$(PROJECT_NAME)/*.go
+      -o \$(BUILD_DIR)/\$(PROJECT_NAME) \\
+      cmd/\$(PROJECT_NAME)/*.go
+
+docker_build:
+	\$(call docker,build)
 
 gen:
 	protoc -I=\$(API_DIR) \\
-    --go_out=\$(GEN_DIR) \\
-    --go-grpc_out=\$(GEN_DIR) \\
-    \$(API_DIR)/\$(PROJECT_NAME).proto
+      --go_out=\$(GEN_DIR) \\
+      --go-grpc_out=\$(GEN_DIR) \\
+      \$(API_DIR)/\$(PROJECT_NAME).proto
 
 clean:
 	rm -rf \$(BUILD_DIR) && find \$(GEN_DIR) -type f -name '*.go' -exec rm {} +
