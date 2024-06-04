@@ -5,6 +5,10 @@ set -e
 PROJECT_NAME=""
 OUT_DIR=./
 
+REGISTRY_HOST=""
+SANDBOX_IMAGE="golang"
+SANDBOX_TAG="1.21.10-bullseye"
+
 usage() {
  echo "Usage: $0 [OPTIONS]"
  echo "Options:"
@@ -146,7 +150,7 @@ define docker
 		--user \$(id -u):\$(id -g) \\
 		--workdir /app \\
 		--volume \`pwd\`:/app/ \\
-		golang:1.21.10-bullseye make \$(1)
+		$SANDBOX_IMAGE:$SANDBOX_TAG make \$(1)
 endef
 
 run:
@@ -186,7 +190,7 @@ grpc:
 EOF
 
 cat << EOF > docker/Dockerfile
-FROM golang:1.21.10-bullseye
+FROM $SANDBOX_IMAGE:$SANDBOX_TAG
 
 WORKDIR /app/
 
